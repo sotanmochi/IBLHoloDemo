@@ -20,6 +20,7 @@ public enum IBLTypes
 
 public class EnvironmentMapObserver : MonoBehaviour 
 {
+	public GameObject DefaultEnvironmentMapSphere;
 
 	public string URL = "http://192.168.13.81:8080/?action=snapshot";
 
@@ -44,10 +45,33 @@ public class EnvironmentMapObserver : MonoBehaviour
 
 	private Camera mainCamera;
 
-	void Start()
+	IEnumerator Start()
 	{
 		observerIsRunning = false;
+		EnvironmentMapSphere.SetActive(false);
 
+		UnityWebRequest request = UnityWebRequest.GetTexture(URL);
+		request.timeout = 3;
+		yield return request.Send();
+		if (request.responseCode != 200)
+		{
+			switch(IBLType)
+			{
+				case IBLTypes.ReflectionProbe:
+					ReflectionProbe.RenderProbe();
+					break;
+				case IBLTypes.Skyshop:
+					RenderToCubemap();
+					UpdateSphericalHarmonics();
+					break;
+				default:
+					break;
+			}
+			yield break;
+		}
+
+		DefaultEnvironmentMapSphere.SetActive(false);
+		EnvironmentMapSphere.SetActive(true);
 		targetRenderer = EnvironmentMapSphere.GetComponent<Renderer>();
 
 		texture = new Texture2D(2, 2);
